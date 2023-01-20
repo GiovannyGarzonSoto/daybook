@@ -2,7 +2,7 @@
   <nav class="navbar bg-primary">
     <a class="navbar-brand text-white">
       <img
-        src="@/assets/logo.png"
+        src="assets/logo.png"
         height="24"
         alt="logo"
         class="d-inline-block align-text-top mx-2"

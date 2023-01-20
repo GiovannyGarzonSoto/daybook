@@ -1,42 +1,181 @@
 <template>
-  <div class="entry-title d-flex justify-content-between p-2">
-    <div>
-        <span class="text-success fs-3 fw-bold">15</span>
-        <span class="mx-1 fs-3">Julio</span>
-        <span class="mx-2 fs-4 fw-light">2021, jueves</span>
-    </div>
-    <div>
-        <button class="btn btn-danger mx-2">
-            Borrar
-            <i class="fa fa-trash-alt"></i>
-        </button>
+  <template v-if="entry">
+    <div
+        class="entry-title d-flex justify-content-between p-2">
+        <div>
+            <span class="text-success fs-3 fw-bold">{{ day }}</span>
+            <span class="mx-1 fs-3">{{ month }}</span>
+            <span class="mx-2 fs-4 fw-light">{{ yearDate }}</span>
+        </div>
+        <div>
+            <input type="file"
+                @change="onSelectedImage"
+                ref="imageSelector"
+                v-show="false"
+                accept="image/png, image/jpeg">
 
-        <button class="btn btn-primary">
-            Subir Foto
-            <i class="fa fa-upload"></i>
-        </button>
+            <button 
+                v-show="entry.id"
+                @click="onDeleteEntry" 
+                class="btn btn-danger mx-2">
+                Borrar
+                <i class="fa fa-trash-alt"></i>
+            </button>
+
+            <button class="btn btn-primary"
+                @click="onSelectImage">
+                Subir Foto
+                <i class="fa fa-upload"></i>
+            </button>
+        </div>
     </div>
-   </div>
-   <hr>
-   <div class="d-flex flex-column px-3 h-75">
-       <textarea
-        placeholder="Que sucedio hoy?"
-       >
+    <hr>
+    <div class="d-flex flex-column px-3 h-75">
+        <textarea
+            placeholder="Que sucedio hoy?"
+            v-model="entry.text"
+        >
        </textarea>
-   </div>
+    </div>
+    <img 
+        v-if="entry.picture && !localImage"
+        :src="entry.picture" 
+        alt="entry-picture"
+        class="img-thumbnail"
+    >
+    <img
+        v-if="localImage"
+        :src="localImage" 
+        alt="entry-picture"
+        class="img-thumbnail"
+    >
+  </template>
+
    <Fab 
     icon="fa-save"
+    @on:click="saveEntry"
    />
-   <img src="https://lh3.googleusercontent.com/proxy/tNbmi4AWAOI6vbMrG36voHDpGq-JC75kR_tgHxh8LtbsKGMV5VGLwiK_WEI92I5Is3kPn6p8_XqDgL_ZewqIZ1Hze5qS" alt="entry-picture"
-   class="img-thumbnail"
-   >
 </template>
 
 <script>
 import { defineAsyncComponent } from 'vue'
+import { mapGetters, mapActions } from 'vuex'
+import Swal from 'sweetalert2'
+import getDayMonthYear from '../helpers/getDayMonthYear'
+import uploadImage from '../helpers/uploadImage'
+
 export default {
+    name: 'EntryView',
+    props: {
+        id: {
+            type: String,
+            required: true
+        }
+    },
     components: {
         Fab: defineAsyncComponent(() => import('../components/Fab.vue'))
+    },
+    data() {
+        return {
+            entry: null,
+            localImage: null,
+            file: null
+        }
+    },
+    computed: {
+        ...mapGetters('journal', ['getEntryById']),
+
+        day() {
+            const {day} = getDayMonthYear(this.entry.date)
+            return day
+        },
+
+        month() {
+            const {month} = getDayMonthYear(this.entry.date)
+            return month
+        },
+
+        yearDate() {
+            const {year} = getDayMonthYear(this.entry.date)
+            return year
+        }
+    },
+    methods: {
+        ...mapActions('journal', ['updateEntry', 'createEntry', 'deleteEntry']),
+        loadEntry() {
+            let entry
+            if(this.id === 'new'){
+                entry = {
+                    text: '',
+                    date: new Date().getTime()
+                }
+            }else{
+                entry = this.getEntryById(this.id)
+                if(!entry) return this.$router.push({name: 'no-entry'})
+            }
+            this.entry = entry
+        },
+        async saveEntry() {
+            new Swal({
+                title: 'Espere por favor',
+                allowOutsideClick: false
+            })
+            Swal.showLoading()
+            const picture = await uploadImage(this.file)
+            console.log(picture, 'entryview')
+            this.entry.picture = picture
+            if(this.entry.id){
+                await this.updateEntry(this.entry)
+            }else{
+                const id = await this.createEntry(this.entry)
+                this.$router.push({name: 'entry', params: {id}})
+            }
+            this.file = null
+            Swal.fire('Guardado', 'Entrada registrada con exito', 'success')
+        },
+        async onDeleteEntry() {
+            const { isConfirmed } = await Swal.fire({
+                title: 'Seguro de eliminar?',
+                text: 'Una vez borrado no podra recuperarse',
+                showDenyButton: true,
+                confirmButtonText: 'Si, estoy seguro'
+            })
+            if(isConfirmed){
+                new Swal({
+                    title: 'Espere porfavor',
+                    allowOutsideClick: false
+                })
+                Swal.showLoading()
+                await this.deleteEntry(this.entry.id)
+                this.$router.push({name: 'no-entry'})
+                Swal.fire('Eliminado', '', 'success')
+            }
+        },
+        onSelectedImage(e) {
+            const file = (e.target.files[0])
+            if(!file) {
+                this.localImage = null
+                this.file = null
+                return 
+            }
+            this.file = file
+
+            const fr = new FileReader()
+            fr.onload = () => this.localImage = fr.result
+            fr.readAsDataURL(file)
+            this.localImage
+        },
+        onSelectImage() {
+            this.$refs.imageSelector.click()
+        }
+    },
+    created() {
+        this.loadEntry()
+    },
+    watch: {
+        id() {
+            this.loadEntry()
+        }
     }
 }
 </script>
