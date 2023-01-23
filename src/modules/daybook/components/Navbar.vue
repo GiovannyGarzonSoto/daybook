@@ -1,36 +1,41 @@
 <template>
-  <nav class="navbar bg-primary">
-    <a class="navbar-brand text-white">
-      <img
-        src="assets/logo.png"
-        height="24"
-        alt="logo"
-        class="d-inline-block align-text-top mx-2"
-      />
-      {{ username }}
-    </a>
-    <div class="d-flex">
-      <button @click="onLogout" class="btn btn-outline-info mx-2">
-        <i class="fa fa-sign-out-alt"></i>
-      </button>
-    </div>
-  </nav>
+    <nav class="navbar bg-primary">
+        <a class="navbar-brand text-white">
+            <img src="@/assets/logo.png" 
+                 alt="Vue Logo"
+                 height="24"
+                 class="d-inline-block align-text-top mx-2">
+            {{ username }}
+        </a>
+
+
+        <div class="d-flex">
+            <button class="btn btn-outline-info mx-2"
+                @click="onLogout">
+                <i class="fa fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
 </template>
 
 <script>
+import { useRouter } from 'vue-router'
 import useAuth from '@/modules/auth/composables/useAuth'
 
-export default{
-  setup(){
-    const {username, logout} = useAuth()
+export default {
+    setup(){
 
-    return {
-      username,
-      onLogout: () => {
-        logout()
-      }
+        const router = useRouter()
+        const { username, logout } = useAuth()
+
+
+        return {
+            username,
+            onLogout: () => {
+                router.push({ name: 'login' })
+                logout()
+            }
+        }
     }
-  }
 }
-
 </script>

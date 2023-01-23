@@ -6,11 +6,13 @@ $theme-colors: (
   "warning":    #ffc107,
   "danger":     #dc3545,
   "light":      #f8f9fa,
-  "dark":       #343a40
+  "dark":       #343a40,
 );
+
+
 
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
 
-.pointer{
+.pointer {
   cursor: pointer;
 }

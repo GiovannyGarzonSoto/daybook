@@ -1,38 +1,62 @@
 import journalApi from '@/api/journalApi'
+// export const myAction = async ({ commit }) => {
 
-export const loadEntries = async({commit}) => {
-    const {data} = await journalApi.get('/entries.json')
-    if(!data) return commit('setEntries', [])
+// }
+
+export const loadEntries = async ({ commit }) => {
+
+    const { data } = await journalApi.get('/entries.json')
+
+    if ( !data ){
+        commit('setEntries', [] )
+        return
+    }
+
     const entries = []
-    for(let id of Object.keys(data)){
+    for( let id of Object.keys( data ) ) {
         entries.push({
             id,
             ...data[id]
         })
     }
 
-    commit('setEntries', entries)
+    commit('setEntries', entries )
 }
 
-export const updateEntry = async({commit}, entry) => {
-    const { date, text, picture } = entry
-    const dataToSave = { date, text, picture }
-    await journalApi.put(`/entries/${entry.id}.json`, dataToSave)
+export const updateEntry = async ({ commit }, entry) => {  // entry debe de ser un parámetro
+
+    const { date, picture, text } = entry
+    const dataToSave = { date, picture, text }
+
+    const resp = await journalApi.put( `/entries/${ entry.id }.json`, dataToSave )
+
     dataToSave.id = entry.id
-    commit('updateEntry', {...dataToSave})
+
+    // Commit de una mutation -> updateEntry
+    commit('updateEntry', { ...dataToSave })
 }
 
-export const createEntry = async({commit}, entry) => {
-    const { date, text, picture } = entry
-    const dataToSave = { date, text, picture }
-    const { data } = await journalApi.post('/entries.json', dataToSave)
+
+export const createEntry = async ({ commit }, entry ) => {
+
+    // dataToSave
+    const { date, picture, text } = entry
+    const dataToSave = { date, picture, text }
+
+    const { data } = await journalApi.post( `entries.json`, dataToSave )
+
     dataToSave.id = data.name
-    commit('addEntry', dataToSave)
+
+    commit('addEntry', dataToSave )
+
     return data.name
 }
 
-export const deleteEntry = async({commit}, id) => {
-    await journalApi.delete(`/entries/${id}.json`)
+
+export const deleteEntry = async ({ commit }, id ) => {
+
+    await journalApi.delete(`/entries/${ id }.json`)
     commit('deleteEntry', id)
+
     return id
 }
